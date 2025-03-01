@@ -1,134 +1,139 @@
-# 2장 JSX
+# 3장 가상 DOM
 
-2025.03.01 Dasom
+2025.03.01 dasom
 
-## 2.1 자바스크립트 XML?
+## 3.1 가상 DOM 소개
 
-JSX는 자바스크립트의 확장 구문(eXtension)으로, XML과 유사한 문법을 자바스크립트 코드 내에서 사용할 수 있도록 함. JSX는 별도의 언어가 아닌 **자바스크립트 코드로 변환되는 문법**이며, 컴파일러(주로 Babel)를 통해 변환됨.
+### DOM이란?
 
-JSX와 HTML의 차이
+- HTML 문서를 자바스크립트 객체로 모델링한 것
+- 브라우저에서 실행되는 문서 객체 모델
+- 엘리먼트 간의 계층 구조를 갖춘 트리 형태로 구성됨
 
-- JSX는 중괄호 `{}` 를 사용하여 표현식을 삽입할 수 있음
-- JSX의 속성은 **카멜 케이스(camelCase)** 를 따름 (예: `onClick` vs HTML의 `onclick`)
-- JSX는 XML과 유사하지만 `class` 대신 `className`을 사용함
+### 가상 DOM이란?
 
-```
-const MyComponent = () => (
-  <section id="list">
-    <h1>내가 만든 목록!</h1>
-    <p>대단하지 않나요? 멋진 것들이 모여 있습니다</p>
-    <ul>
-      {amazingThings.map((t) => (
-        <li key={t.id}>{t.label}</li>
-      ))}
-    </ul>
-  </section>
-);
-```
+- 실제 DOM의 가벼운 복사본
+- 실제 DOM은 노드 객체로 구성되지만, 가상 DOM은 설명 역할을 하는 평범한 JS 객체로 구성됨
+- 리액트는 개발자가 `setState` 또는 다른 메커니즘을 통해 UI 변경을 요청할 때마다 가상 DOM을 먼저 업데이트한 후, 변경사항을 반영하여 실제 DOM을 업데이트(재조정)
+  - 실제 DOM의 업데이트는 느리고 비용이 많이 들기 때문
+- 가상 DOM 업데이트는 실제 페이지의 레이아웃을 변경하지 않기 때문에 훨씬 빠르게 동작
+- 가상 DOM은 브라우저나 특정 환경에 의존하지 않으므로, 다양한 호스트 환경에서 사용 가능
+- 리액트는 가상 DOM이 업데이트될 때 비교 알고리즘을 사용해 이전 버전과 새로운 버전의 차이를 식별하고, 최소한의 변경 사항만 실제 DOM에 반영함
 
-위 JSX 코드는 `React.createElement`를 사용하여 다음과 같이 변환됨.
+## 3.2 실제 DOM
 
-```
-const MyComponent = () =>
-  React.createElement(
-    "section",
-    { id: "list" },
-    React.createElement("h1", {}, "내가 만든 목록!"),
-    React.createElement("p", {}, "대단하지 않나요? 멋진 것들이 모여 있습니다"),
-    React.createElement(
-      "ul",
-      {},
-      amazingThings.map((t) =>
-        React.createElement("li", { key: t.id }, t.label)
-      )
-    )
-  );
-```
+### 실제 DOM의 특징
 
-## 2.2 JSX의 장점
-
-- **가독성 향상**: HTML과 유사한 문법으로 더 직관적인 코드 작성 가능
-- **보안성 강화**: JSX 코드가 변환되면서 XSS 공격을 방지할 수 있도록 처리됨
-- **타입 안정성**: `propTypes`나 TypeScript와 결합해 안전한 코드 작성 가능
-- **컴포넌트 기반 개발**: UI를 작은 단위의 컴포넌트로 나눠 재사용성과 유지보수성을 높일 수 있음
-- **다양한 환경에서 사용 가능**: React 외에도 다양한 라이브러리와 프레임워크에서 활용 가능
-
-## 2.3 JSX의 약점
-
-- **학습 곡선**: JSX는 JavaScript의 표준 문법이 아니므로 추가 학습이 필요함
-- **빌드 과정 필요**: 브라우저가 JSX를 직접 실행할 수 없기 때문에 Babel 등의 트랜스파일러가 필요함
-- **관심사의 혼합**: HTML과 JavaScript가 함께 포함되므로, 일부 개발자에게는 코드의 역할이 명확하지 않을 수 있음
-- **자바스크립트의 일부 문법과 호환되지 않음**: JSX 내부에서 `if`, `switch` 같은 명령문을 사용할 수 없음
-
-## 2.4 내부 동작
-
-### 2.4.1 코드는 어떻게 작동하나요?
-
-컴퓨터가 코드를 해석하고 실행하기 위해서는 **컴파일러를 통해 고급 프로그래밍 언어로 작성된 소스 코드를 구문 트리로 변환**하는 과정이 필요함.
-
-컴파일러의 변환 과정
-
-- **토큰화**: 문자열을 의미 있는 토큰으로 분해하는 과정
-- **구문 분석**: 토큰을 구문 트리로 변환
-- **코드 생성**: AST(추상 구문 트리)에서 기계어를 생성
-
-이 과정이 끝나면 자바스크립트 엔진이 코드를 실행함.
-
-### 2.4.2 JSX로 자바스크립트 구문 확장하기
-
-JSX는 브라우저에서 직접 실행할 수 없기 때문에 **빌드 단계**가 필요함. 이 과정에서 JSX가 바닐라 JS로 변환됨. 이를 **트랜스파일(transpile)** 이라고 부름.
-
-JSX의 트랜스파일링을 담당하는 주요 도구는 Babel이며, TypeScript, SWC(Speedy Web Compiler) 같은 대체 도구도 있음.
-
-## 2.5 JSX 프라그마
-
-JSX 프라그마는 JSX가 변환될 때 호출할 함수를 변경할 수 있도록 해줌. 기본적으로 JSX는 `React.createElement`로 변환됨.
-
-프라그마를 변경하면 React 없이 JSX를 사용할 수도 있음.
+- 웹 브라우저는 HTML 문서를 읽어 들인 후 구문을 분석하여 DOM 트리로 변환
+- DOM은 노드 객체들로 구성된 자바스크립트 객체이며, 자바스크립트를 사용하여 조작할 수 있음
 
 ```
-/** @jsx customCreateElement */
-const element = <MyComponent prop="값">내용</MyComponent>;
-```
-
-위 코드는 다음과 같이 변환됨.
-
-```
-customCreateElement(MyComponent, { prop: "값" }, "내용");
-```
-
-## 2.6 표현식
-
-JSX는 표현식을 사용할 수 있지만, `if`, `switch` 같은 명령문은 JSX 내부에서 사용할 수 없음.
-
-```
-const value = 10;
-const MyComponent = () => <p>{value > 5 ? "큰 값" : "작은 값"}</p>; // 가능
-```
-
-그러나 블록 문장은 JSX 내부에서 사용할 수 없으므로 아래 코드는 에러 발생.
-
-```
-const MyComponent = () => (
-  <p>
-    {if (value > 5) {
-      "큰 값";
-    }}
-  </p>
-); // 불가능
-```
-
-이 경우, JSX 외부에서 변수를 선언한 후 JSX 내부에서 사용할 수 있음.
-
-```
-const MyComponent = () => {
-  let message;
-  if (value > 5) {
-    message = "큰 값";
-  } else {
-    message = "작은 값";
-  }
-  return <p>{message}</p>;
+// 실제 DOM 노드 구조 예시
+const dom = {
+    type: 'document',
+    doctype: 'html',
+    children: [
+        { type: 'html', children: [
+            { type: 'head', children: [
+                { type: 'title', children: [{ type: 'text', content: 'Hello, World!' }] }
+            ]},
+            { type: 'body', children: [
+                { type: 'h1', children: [{ type: 'text', content: 'Hello, World!' }] }
+            ]}
+        ]}
+    ]
 };
+```
+
+### 3.2.1 실제 DOM의 문제점
+
+#### 성능 문제
+
+- DOM을 변경할 때마다 브라우저는 레이아웃을 다시 계산하고 페이지의 영향을 받는 부분을 다시 그림 (Reflow, Repaint 발생)
+- `offsetWidth` 같은 속성에 접근할 때 레이아웃을 다시 계산해야 하는 경우가 있음
+  - 해결 방법: `getBoundingClientRect()` 사용하여 레이아웃을 다시 계산하지 않고 엘리먼트 크기와 위치를 얻음
+  - 단, 대기 중인 레이아웃 변경 사항이 있을 경우 `getBoundingClientRect()` 도 Reflow를 발생시킬 수 있음
+
+#### 브라우저 간 호환성 문제
+
+- 브라우저마다 DOM 모델링 방식이 달라, 웹 애플리케이션의 일관성을 유지하기 어려움
+- 리액트는 **합성 이벤트 시스템(Synthetic Event System)**을 통해 이러한 문제를 해결
+  - 여러 브라우저에서 일관성을 유지하도록 설계된 이벤트 래퍼
+  - 이벤트 위임을 활용하여 이벤트 리스너를 최적화
+
+### 3.2.2 문서 조각(Document Fragment)
+
+- 문서 조각은 기본 DOM에 영향을 주지 않고 여러 업데이트를 수행할 수 있는 가벼운 컨테이너 역할
+- 문서 조각을 사용하면 Reflow와 Repaint가 한 번만 발생하여 성능 향상 가능
+
+```
+const fragment = document.createDocumentFragment();
+for (let i = 0; i < 100; i++) {
+    const li = document.createElement('li');
+    li.textContent = `List item ${i}`;
+    fragment.appendChild(li);
+}
+document.getElementById('list').appendChild(fragment);
+```
+
+- 리액트의 가상 DOM도 문서 조각처럼 업데이트를 일괄적으로 처리함
+- 차이점은 리액트는 **비교 알고리즘을 적용**하여 최소한의 변경 사항만 적용한다는 점
+
+## 3.3 가상 DOM 작동 방식
+
+### 3.3.1 리액트 엘리먼트
+
+- 리액트에서 UI는 **리액트 엘리먼트 트리**로 표현됨
+- `React.createElement` 함수를 사용하여 생성
+
+```
+const element = React.createElement('h1', { className: 'greeting' }, 'Hello, World!');
+```
+
+- 리액트 엘리먼트는 변경할 수 없는 **불변 객체**
+- console.log로 출력하면 다음과 같은 결과 확인 가능
+
+```
+{
+    $$typeof: Symbol(react.element),
+    type: 'h1',
+    key: null,
+    ref: null,
+    props: {
+        className: 'greeting',
+        children: 'Hello, World!'
+    },
+    _owner: null,
+    _store: {}
+}
+```
+
+### 3.3.2 가상 DOM과 실제 DOM 비교
+
+- `React.createElement`는 **가상 DOM 엘리먼트**를 생성하고, `document.createElement`는 **실제 DOM 노드**를 생성
+- 리액트는 상태가 변경될 때마다 새로운 가상 DOM을 생성하고, 이전 가상 DOM과 비교 후 필요한 변경 사항만 실제 DOM에 적용 (재조정)
+
+### 3.3.3 효율적인 업데이트
+
+#### 디핑(diffing) 알고리즘
+
+- 리액트는 이전 가상 DOM과 새로운 가상 DOM을 비교하여 변경 사항이 있는 부분만 업데이트
+- **디핑 알고리즘**
+  - 두 트리의 루트 노드가 다르면 전체 트리를 다시 렌더링
+  - 루트 노드가 같다면 속성이 변경된 경우에만 업데이트
+  - 자식 노드가 다른 경우 변경된 부분만 업데이트
+  - 노드가 추가되거나 삭제된 경우 최소한의 변경만 적용
+  - key 속성을 사용하면 노드의 위치 변경을 최적화 가능
+
+#### 불필요한 리렌더링 방지
+
+- 리액트는 상태가 변경되면 해당 컴포넌트와 모든 하위 컴포넌트를 리렌더링
+- `React.memo`를 사용하여 불필요한 리렌더링 방지 가능
+
+```
+const ChildComponent = React.memo(() => {
+    console.log('ChildComponent rendered');
+    return <h2>Child Component</h2>;
+});
 ```
 
