@@ -519,3 +519,140 @@
         - 새 함수를 Props로 전달하면 자식 컴포넌트가 순수 컴포넌트이거나 메모화가 적용된 경우 Props의 변화를 감지해 리렌더링 할 수 있음
     - 내장 컴포넌트
         - **대부분의 경우 메모화로 이득 없이 부하만 추가되므로 리액트는 내장 메모화를 제공하지 않음**
+- 그렇다면…useCallback의 좋은 사용 사례는 뭘까?
+    - 자주 리렌더링할 가능성이 있는 컴포넌트가 있고 하위 컴포넌트에 콜백을 전달할 때, **특히 하위컴포넌트가 React.memo 또는 shouldComponentUpdate로 최적화된 경우** 매우 유용함
+        
+        → 콜백을 메모화하면 부모 컴포넌트를 렌더링할 때 자식 컴포넌트가 불필요하게 리렌더링되지 않음
+        
+- 예시 - useCallback이 유용한 경우
+    
+    ```jsx
+    const ExpensiveComponent = React.memo(({ onButtonClick }) => {
+      // 이 컴포넌트는 렌더링 비용이 비싼 컴포넌트
+      // 따라서 불필요한 렌더링을 줄이고자함
+      // 여기서 비용이 비싼 계산을 수행
+      const now = performance.now();
+      while(performance.now() - now < 1000) {
+        // 인위적인 지연 -- 1000 밀리초 멈춤
+      }
+      return <button onClick={onButtonClick}>Click me!</button>
+    });
+    
+    const MyComponent = () => {
+      const [count, setCount] = useState(0);
+      const [otherState, setOtherState] = useState(0);
+      // 이 콜백은 메모화 되었으며 count가 변경될 때만 업데이트됨
+      const increamentCount = useCallback(() => {
+        setCount((prevCount) => prevCount + 1);
+      }, [setCount]); // 의존성 배열
+    
+      // 여기서 상태 업데이트를 하면 myComponent가 리렌더링됨
+      const doSomethingElse = () => {
+        setOtherState((s) => s + 1);
+      };
+      
+      return (
+        <div>
+          <p>카운트 : {count}</p>
+          <ExpensiveComponent />
+          <button onClick={doSomethingElse}>doSomethingElse</button>
+        </div>
+      );
+    };
+    ```
+    
+    - ExpensiveComponent는 React.memo로 감싸진 자식 컴포너트로 Props가 변경될 때마다 리렌더링됨
+    - MyComponent에는 count와 otherState라는 두 개의 상태가 존재
+    - increamentCount는 count를 업데이트하는 콜백. useCallback으로 메모화되므로 MyComponent가 변경되어 otherState가 리렌더링되더라도 ExpensiveComponent는 리렌더링되지 않음
+    - doSomethingElse 함수는 ohterState를 변경하지만 useCallback이나 다른 자식에게 전달되지 않으므로 ExpensiveComponent와 함께 메모화할 필요가 없음
+- useCallback을 사용하면 MyComponent가 count와 무관한 이유로 리렌더링 시 ExpensiveComponent가 불필요하게 리렌더링 되지 않도록 함
+→ 자식 컴포넌트 렌더링의 비용이 비싸서 렌더링 횟수를 줄여 성능을 최적화하려는 경우 유용함
+- useCallback은 본질적으로 함수를 위한 useMemo임
+
+### 5.2.2 모두 잊고 forget 하세요
+
+- 리액트 컴파일러는 리액트 애플리케이션에서 메모화를 자동화하기 위한 새로운 도구로 useMemo, useCallback 같은 훅을 쓸모없게 만들 수 있음
+    
+    → 메모화를 자동으로 처리하여 컴포넌트 렌더링을 최적화할 수 있음
+    
+- 리액트 컴파일러는 리액트 리렌더링 동작의 객체 동일성 비교를 깊은 비교 없는 시맨틱 값 비교로 변환하여 성능을 향상시킴
+    - 예시
+        
+        ```jsx
+        const user = { name: 'John' }; 
+        ```
+        
+        - 위 같은 값이 Props로 전달된다고 가정할 때, user는 항상 새롭게 만들어지기 때문에 컴포넌트가 계속 리렌더링됨
+        - **하지만 리액트 컴파일러에서는 user.name을 비교해 실제로 변화가 있을 때만 리렌더링되도록 처리**
+
+## 5.3 지연 로딩
+
+- 애플리케이션 규모가 커지면서 자바스크립트 코드의 양이 증가하였고, 이로 인해 여러 문제점이 생김
+    - 페이지 로딩시간이 느려짐
+        - async 속성을 사용해 자바스크립트 파일을 비동기적으로 읽어 들이는 방법으로 해결 가능
+    - 데이터 사용량이 증가함
+        - 보통 자바스크립트 번들의 크기는 다른 유형의 웹파일보다 큼
+        - 해결법1. 코드 분할을 사용해 특정 페이지나 기능에 필요한 자바스크립트만 읽어 들이는 방법으로 해결 가능
+        - 해결법2. 지연 로딩을 사용해 페이지가 완전히 읽어들여질 때까지 초기 실행에 필수적이지 않은 자바스크립트의 로딩을 미뤄둘 수 있음
+        → 필요할 때만 코드를 읽어 들이므로 페이지 로드 시간과 데이터 사용량을 줄일 수 있음
+- 리액트에서는 React.lazy와 Suspense를 사용한 지연 로딩이라는 더욱 직관적인 해결책이 존재
+
+### React.lazy를 사용해서 지연 로딩시키기
+
+- 문제 상황 예시
+    
+    ```jsx
+    import Sidebar from './Sidebar'; // 불러올 용량 22MB // 정적 임포트
+    
+    const MyComponent = ({ initialSidebarState }) => {
+      const [showSidebar, setShowSidebar] = useState(initialSidebarState);
+    
+      return (
+        <div>
+          <button onClick={() => setShowSidebar(!showSidebar)}>
+            사이트바 토글
+          </button>
+          {showSidebar && <Sidebar />}
+        </div>
+      );
+    };
+    ```
+    
+    - 규모가 큰 애플리케이션에 접이식 사이드바가 있고, 이 사이드바에 다른 페이지로 연결되는 링크 목록이 있다고 가정
+    - 처음 로드 시 사이드바가 접혀있다면 처음부터 전체 사이드바를 읽어들이지 않고, 사용자가 사이드바를 펼쳤을 때 읽어들여도됨!
+- 해결 코드
+    
+    ```jsx
+    import { lazy, Suspense } from 'react'
+    import FakeSidebarShell from './FakeSidebarShell'; // 불러올 용량 1KB
+    
+    const Sidebar = lazy(() => import('./Sidebar')); // 동적 임포트
+    
+    const MyComponent = ({ initialSidebarState }) => {
+      const [showSidebar, setShowSidebar] = useState(initialSidebarState);
+    
+      return (
+        <div>
+          <button onClick={() => setShowSidebar(!showSidebar)}>
+            사이트바 토글
+          </button>
+          <Suspense fallback={<FakeSidebarShell />}>
+    	      {showSidebar && <Sidebar />}
+          </Suspense>
+        </div>
+      );
+    };
+    ```
+    
+    - ‘./Sidebar’를 정적으로 가져오지 않고 동적으로 가져오도록 함
+        - 기존 예시의 `import Sidebar from './Sidebar';` 는 정적 임포트임
+        - 정적 임포트는 컴파일 타임에 모듈을 불러옴(코드 실행 전 Sidebar 모듈이 모두 로드됨)
+    - 동적 임포트
+        - 런타임에 모듈을 불러옴
+        - Sidebar가 실제로 필요할 때까지 로드되지 않고, React.lazy와 함께 사용되는 경우 컴포넌트를 필요할 때만 로드할 수 있음
+    - 대상이되는 컴포넌트를 Suspense로 감싸서 사이드바 다운로드가 완료되기 전까지 폴백 컴포넌트를 표시하도록 구현
+
+### 5.3.1 Suspense를 통한 더 나은 UI 제어
+
+- 지연 로딩이 필요한 컴포넌트를 감싸는 용도로만 사용할 것
+- Suspense 경계는 레이아웃 이동을 해결하고 사용자 인터페이스를 더욱 직관적으로, 응답성이 좋게 만드는 기본 요소임
