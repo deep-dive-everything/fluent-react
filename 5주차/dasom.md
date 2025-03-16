@@ -13,6 +13,19 @@ useReducer 사용의 이점
 
 useState와 useReducer 사용은 복잡성에 따라 결정할 수 있다
 
+> memo!
+> useState의 setState와 useReducer의 dispatch는 1:1 대칭되지 않습니다!
+>
+```js
+// useState
+setState: React.Dispatch<React.SetStateAction<string>>
+
+// useReducer
+dispatch: React.Dispatch<{ type: string; value: string }>
+```
+useState는 바로 상태를 업데이트하고, 그 즉시 리렌더링을 트리거함.
+하지만 useReducer는 내부적으로 React의 업데이트 큐에 액션을 추가하고,
+“다른 업데이트와 함께 처리될 수 있도록 스케줄링” 하기 때문에 즉시 리렌더링되지 않을 수도 있음!
 
 * Immer
   * 변경 가능한 초안 상태로 작업하고, 한 번 생성된 상태는 변경 불가로 만들어 복잡성을 관리할 수 있도록 도와줌
