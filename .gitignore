@@ -1,6 +1,81 @@
-### macOS ###
-# General
+### General ###
 .DS_Store
+*.log
+*.pem
+*.tgz
+*.sublime*
+**/*.backup.*
+**/*.back.*
+*.pid
+*.seed
+*.pid.lock
 .AppleDouble
 .LSOverride
 .idea
+
+### Logs ###
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.node_repl_history
+
+### Dependency directories ###
+node_modules/
+bower_components
+jspm_packages/
+web_modules/
+
+### Build output ###
+build/
+dist/
+out/
+.next/
+.nuxt/
+.cache/
+.parcel-cache
+.svelte-kit/
+.vuepress/dist
+.serverless/
+.webpack/
+.temp
+.docusaurus
+/public/build
+
+### Env files ###
+.env
+.env*.local
+
+### TypeScript ###
+*.tsbuildinfo
+next-env.d.ts
+
+### Vercel ###
+.vercel
+
+### Yarn v2 ###
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp
+.pnp.js
+.pnp.*
+
+### Coverage ###
+coverage/
+.nyc_output
+*.lcov
+
+### Misc Tools ###
+lib-cov
+.grunt
+.lock-wscript
+report.*.json
+.rpt2_cache/
+.rts2_cache_*/
+
+### VSCode ###
+.vscode-test
