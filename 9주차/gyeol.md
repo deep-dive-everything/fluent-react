@@ -75,7 +75,7 @@
   app.use(express.static(path.join(__dirname, 'build')));
   app.get('*', async (req, res) => {
     // 비법 소스 부분
-    **const rscTree = await turnServerComponentsIntoTreeOfElements(<App />);**
+    const rscTree = await turnServerComponentsIntoTreeOfElements(<App />);
     // 비법 소스 부분 끝
     // 비동기로 동작한 서버 컴포넌트를 문자열로 렌더링
     const html = ReactDOMServer.renderTostring(rscTree);
