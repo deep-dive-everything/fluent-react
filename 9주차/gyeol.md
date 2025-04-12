@@ -112,7 +112,7 @@
         
       ```jsx
       async function turnServerComponentIntoTreeOfElements(jsx){
-        // **첫번째 분기**
+        // 첫번째 분기
         if(
           typeof jsx === 'string' || 
           typeof jsx === 'number' || 
@@ -122,14 +122,14 @@
           // 이 타입에 대해서는 아무 동작이 필요하지 않음
           return jsx;
         }
-        // **두번째 분기**
+        // 두번째 분기
         if(Array.isArray(jsx)){
           // 배열의 각 항목을 처리
           return Promise.all(jsx.map(child => renderJSXToClientJSX(child)));
         }
         // 객체를 다루는 경우
         if(jsx != null && typeof jsx === 'object'){
-          // **세 번째 분기**
+          // 세 번째 분기
           // 객체가 React 엘리먼트인 경우
           if(jsx.$$typeof === Symbol.for('react.element')){
             // `{type}은 내장 컴포넌트를 나타내는 문자열
